@@ -52,8 +52,13 @@ function mod:init()
 	--To have these weapon, outside a mission, open the console and type the following:
 	require(self.scriptPath.."excavate") --weapon truelch_Excavate
 	require(self.scriptPath.."permanentHp") --weapon truelch_PermanentHp
-	require(self.scriptPath.."diagonalPush") --
-	require(self.scriptPath.."simpleDiagPush") --
+
+	require(self.scriptPath.."diagonalPush")
+	require(self.scriptPath.."diagonalPushEvent")
+	require(self.scriptPath.."diagonalPushMeta")
+
+	require(self.scriptPath.."testPreview") --truelch_TestPreview
+	require(self.scriptPath.."testCharge") --truelch_TestCharge
 
 	--Then, press enter and close the console
 end

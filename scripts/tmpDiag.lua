@@ -1,9 +1,34 @@
+--[[
+TODO:
+- make the unit play their hurt sound
+- preview doesn't show the bump damage
+- maybe hide the semi-transparent unit at the end pos
+- damage the bumped units after the leaped unit comes back ot its position (it's too early atm)
+- do a target area that's also diagonal????
+
+tosx and lemon:
+- There's a spacedamage.iPush value that gives a directionless square; I think I used it for the Far Line lighthouse attack
+- local lens = SpaceDamage(p2,0,5) --5 gives a directionless push square
+- Look at magnetic golems Catapult weapon, Lemonymous gave me some code to fake bump damage, I think it mostly works (if there are cases where it doesn't, I'm not sure what they are)
+- https://github.com/Lemonymous/ITB-LemonymousMods/blob/f6fb784359235e374ad23cbb2b0b6f067bcd36c2/mods/Bots'n'Bugs/scripts/secret.lua#L1190
+]]	
+
+
 	--Just a test. This displays hollow squares on the ground.
 	--[[
 	local tosxDamage = SpaceDamage(Point(7, 7), 0, 5)
 	ret:AddDamage(tosxDamage)
 	local tosxDamage = SpaceDamage(Point(0, 0), 0, 5)
 	ret:AddDamage(tosxDamage)
+	]]
+
+	--[[
+	for dir = DIR_START, DIR_END do
+		for k = 2, 7 do
+			local curr = point + DIR_VECTORS[dir]*k
+			ret:push_back(curr)
+		end
+	end
 	]]
 
 function truelch_DiagonalPush:GetSkillEffect_TestInTheVaccum(p1, p2)

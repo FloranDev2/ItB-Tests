@@ -1,22 +1,7 @@
 local mod = mod_loader.mods[modApi.currentMod]
 
---[[
-TODO:
-- make the unit play their hurt sound
-- preview doesn't show the bump damage
-- maybe hide the semi-transparent unit at the end pos
-- damage the bumped units after the leaped unit comes back ot its position (it's too early atm)
-- do a target area that's also diagonal????
-
-tosx and lemon:
-- There's a spacedamage.iPush value that gives a directionless square; I think I used it for the Far Line lighthouse attack
-- local lens = SpaceDamage(p2,0,5) --5 gives a directionless push square
-- Look at magnetic golems Catapult weapon, Lemonymous gave me some code to fake bump damage, I think it mostly works (if there are cases where it doesn't, I'm not sure what they are)
-- https://github.com/Lemonymous/ITB-LemonymousMods/blob/f6fb784359235e374ad23cbb2b0b6f067bcd36c2/mods/Bots'n'Bugs/scripts/secret.lua#L1190
-]]
-
 truelch_DiagonalPush = ArtilleryDefault:new{
-    Name = "Diagonal Push",
+    Name = "Diagonal Push (Original)",
     Description = "Simple artillery with diagonal push.",
     Class = "Ranged",
     Icon = "weapons/ranged_artillery.png",
@@ -41,6 +26,19 @@ function truelch_DiagonalPush:GetTargetArea(point)
 		for k = 2, 7 do
 			local curr = point + DIR_VECTORS[dir]*k
 			ret:push_back(curr)
+		end
+	end
+
+	local offsets = { Point(-1, -1), Point(1, -1), Point(1, 1), Point(-1, 1) }
+
+	for i, offset in ipairs(offsets) do
+		for k = 2, 7 do
+			local curr = point + offset*k
+			if Board:IsValid(curr) then
+				ret:push_back(curr)
+			else
+				break
+			end
 		end
 	end
 
@@ -94,7 +92,7 @@ function truelch_DiagonalPush:GetSkillEffect(p1, p2)
 			--V1
 			--original --->
 			mod.worldConstants:setHeight(ret, 1)
-			ret:AddLeap(leap, NO_DELAY)			
+			ret:AddLeap(leap, NO_DELAY)
 			ret.effect:back().bHidePath = true
 			mod.worldConstants:resetHeight(ret)
 			-- <--- original
@@ -115,6 +113,12 @@ function truelch_DiagonalPush:GetSkillEffect(p1, p2)
 					local damage = SpaceDamage(leapStart, 0)
 					damage.sImageMark = "combat/icons/diag_push_hit_"..(i - 1)..".png"
 					ret:AddDamage(damage)
+
+					--Fake bump damage preview
+					local extra_damage_event = SpaceDamage()
+					extra_damage_event.loc = leapStart
+					extra_damage_event.iPush = 230 -- hack to display hp loss
+					mod.weaponPreview:AddDamage(extra_damage_event)
 
 					if not pawnStart:IsAbility("tatu_armordillo") then
 						--Bump Damage
@@ -141,6 +145,12 @@ function truelch_DiagonalPush:GetSkillEffect(p1, p2)
 									pawnEnd:SetHealth(pawnEnd:GetHealth() - 1)
 								end
 							]])
+
+							--Fake bump damage preview
+							local extra_damage_event = SpaceDamage()
+							extra_damage_event.loc = leapEnd
+							extra_damage_event.iPush = 230 -- hack to display hp loss
+							mod.weaponPreview:AddDamage(extra_damage_event)
 						else
 							LOG("[TRUELCH] Tatu's immunity to bump damage!")
 						end
@@ -149,7 +159,8 @@ function truelch_DiagonalPush:GetSkillEffect(p1, p2)
 						terrData[#terrData+1] = leapEnd --store data to damage a bit later so we don't damage the leaped unit
 					end
 
-					pushData[#pushData+1] = { tostring(pawnStart:GetId()), leapStart:GetString() }
+					--pushData[#pushData+1] = { tostring(pawnStart:GetId()), leapStart:GetString() }
+					pushData[#pushData+1] = { pawnStart:GetId(), leapStart }
 				end
 			else
 				--There's no pawn to displace
@@ -170,14 +181,27 @@ function truelch_DiagonalPush:GetSkillEffect(p1, p2)
 	--And move back
 	for _, data in ipairs(pushData) do
 		--SetSpace
+		-- DATA CONVERTED TO STRING
+		--ret:AddScript([[
+		--	local pawnStart = Board:GetPawn(]]..data[1]..[[)
+		--	pawnStart:SetSpace(]]..data[2]..[[)
+		--]])
+
+		-- ORIGINAL DATA
 		ret:AddScript([[
-			local pawnStart = Board:GetPawn(]]..data[1]..[[)
-			pawnStart:SetSpace(]]..data[2]..[[)
+			local pawnStart = Board:GetPawn(]]..tostring(data[1])..[[)
+			pawnStart:SetSpace(]]..data[2]:GetString()..[[)
 		]])
+
+		--data[1] -> pawnStart:GetId()
+		--data[2] -> leapStart
 
 		--AddLeap
 		--This is likely to fail since there might be two pawns at this location
 		--[[
+		local leap = PointList()
+		leap:push_back(Board:GetPawn(data[1]):GetSpace())
+		leap:push_back(data[2])
 		mod.worldConstants:setHeight(ret, 1)
 		ret:AddLeap(leap, NO_DELAY)
 		ret.effect:back().bHidePath = true
