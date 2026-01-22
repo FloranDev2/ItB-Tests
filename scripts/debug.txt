@@ -1,0 +1,18 @@
+===>>> truelch_TestExt2:GetSkillEffect <<<===  [occ: 1]
+TestExt2_Debug(msg: GetSkillEffect (before AddScript) [occ: 1]) -> amount of effects: 0 [occ: 1]
+TestExt2_Debug(msg: GetSkillEffect (after AddScript)) -> amount of effects: 1 [occ: 1]
+
+===>>> truelch_TestExt2:GetSkillEffect <<<===  [occ: 2]
+TestExt2_Debug(msg: GetSkillEffect (before AddScript) [occ: 2]) -> amount of effects: 0 [occ: 2]
+TestExt2_Debug(msg: GetSkillEffect (after AddScript)) -> amount of effects: 1 [occ: 2]
+ret:AddScript - A [occ: 2]
+TestExt2_Debug(msg: AddScript - BEFORE) -> amount of effects: 3 [occ: 2]
+ret:AddScript - B [occ: 2]
+ret:AddScript - C [occ: 2]
+ret:AddScript - D [occ: 2]
+TestExt2_Debug(msg: AddScript - AFTER) -> amount of effects: 4 [occ: 2]
+ret:AddScript - E [occ: 2]
+
+===>>> truelch_TestExt2:GetSkillEffect <<<===  [occ: 3]
+TestExt2_Debug(msg: GetSkillEffect (before AddScript) [occ: 3]) -> amount of effects: 0 [occ: 3]
+TestExt2_Debug(msg: GetSkillEffect (after AddScript)) -> amount of effects: 1 [occ: 3]

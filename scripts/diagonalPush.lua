@@ -136,7 +136,7 @@ function truelch_DiagonalPush:GetSkillEffect(p1, p2)
 
 					--Damage to end (could be pawn, could be grid, could be mountain...)
 					if pawnEnd ~= nil then
-						if not pawnStart:IsAbility("tatu_armordillo") then
+						if not pawnEnd:IsAbility("tatu_armordillo") then
 							ret:AddScript([[
 								local pawnEnd = Board:GetPawn(]]..pawnEnd:GetId()..[[)
 								if pawnEnd:IsEnemy() and ]]..tostring(isForceAmp)..[[ then

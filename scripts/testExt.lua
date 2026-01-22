@@ -2,14 +2,14 @@ local mod = mod_loader.mods[modApi.currentMod]
 --LOG("[TRUELCH] tostring(mod): "..tostring(mod))
 --LOG("[TRUELCH] save_table(mod): "..save_table(mod))
 
-truelch_TestCharge = Skill:new{
-	Name = "Test Charge",
-	Description = "Test custom charge.",
+truelch_TestExt = Skill:new{
+	Name = "Test Ext",
+	Description = "Test external functions.",
 	Class = "",
 	Icon = "advanced/weapons/Prime_TC_Punt.png",
 }
 
-function truelch_TestCharge:GetTargetArea(point)
+function truelch_TestExt:GetTargetArea(point)
 	local ret = PointList()
 
 	for j = 0, 7 do
@@ -55,53 +55,11 @@ function Tmp()
 end
 
 function TruelchDoTheFuckingLogic()
-	local se = 
+	--local se = 
 end
 
 
-function truelch_TestCharge:GetSkillEffect(p1, p2)
-	local ret = SkillEffect()
-
-	truelch_mod = mod
-	if truelch_mod ~= nil then
-		LOG("[TRUELCH] GetSkillEffect truelch_mod EXISTS!!! YAY")
-	else
-		LOG("[TRUELCH] GetSkillEffect truelch_mod is nil :(")
-	end
-
-	local ret2 = TruelchGetRet()
-	local mod2 = TruelchGetMod()
-
-	if mod2 ~= nil then
-		LOG("[TRUELCH] mod2 EXISTS!!! YAY")
-		--LOG("[TRUELCH] tostring(mod2): "..tostring(mod2))
-		--LOG("[TRUELCH] save_table(mod2): "..save_table(mod2))
-	else
-		LOG("[TRUELCH] mod2 is nil :(")
-	end
-
-	mod2.worldConstants:setHeight(ret2, 1)
-	local leap = PointList()
-	leap:push_back(p1:GetString())
-	leap:push_back(p2:GetString())
-	ret2:AddLeap(leap, FULL_DELAY)
-	mod2.worldConstants:resetHeight(ret2)
-
-	mod2.worldConstants:setHeight(ret2, 1)
-	local leap2 = PointList()
-	leap2:push_back(p2:GetString())
-	leap2:push_back(p1:GetString())
-	ret2:AddLeap(leap2, NO_DELAY)
-	mod2.worldConstants:resetHeight(ret2)
-
-	Board:AddEffect(ret2)
-
-	return ret
-end
-
-
-
-function truelch_TestCharge:GetSkillEffect(p1, p2)
+function truelch_TestExt:GetSkillEffect(p1, p2)
 	local ret = SkillEffect()
 
 	truelch_mod = mod

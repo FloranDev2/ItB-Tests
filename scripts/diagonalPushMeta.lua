@@ -62,7 +62,7 @@ mt.__newindex = function(SpaceDamageInstance, key, value)
 		local offset = offsets[value - 9]
 		local leapStart = SpaceDamageInstance.loc
 		local leapEnd = SpaceDamageInstance.loc + offset
-		LOG("leapStart: "..leapStart:GetString()..", leapEnd: "..leapEnd:GetString())
+		--LOG("leapStart: "..leapStart:GetString()..", leapEnd: "..leapEnd:GetString())
 
 		SpaceDamageInstance.sScript = [[
 			local se = SkillEffect()
@@ -73,12 +73,6 @@ mt.__newindex = function(SpaceDamageInstance, key, value)
 			se:AddLeap(leap, NO_DELAY)
 			diagPushMeta_ResetHeight(se)
 			Board:AddEffect(se)
-
-			Board:AddAnimation(]]..leapStart:GetString()..[[, "truelch_airpush_"..(]]..tostring(value)..[[ - 10), ANIM_NO_DELAY)
-
-			--TODO: add the rest of the logic there
-
-			se:AddDelay(-1) --May god or whatever omnipotent power have mercy on me
 		]]
 
 		SpaceDamageInstance.sImageMark = "combat/icons/diag_push_off_"..(value - 10)..".png"
@@ -171,6 +165,11 @@ function truelch_DiagonalPushMeta:GetSkillEffect(p1, p2)
 		local isValid = Board:IsValid(leapEnd)
 		local isBump = Board:IsBlocked(leapEnd, PATH_PROJECTILE)
 		local isForceAmp = IsPassiveSkill("Passive_ForceAmp")
+
+		--In any case, I need to play (custom) push effects
+		local pushFx = SpaceDamage(leapStart, 0)
+		pushFx.sAnimation = "truelch_airpush_"..(i - 1)
+		ret:AddDamage(pushFx)
 
 		if pawnStart ~= nil then
 			if pawnStart:IsGuarding() then
