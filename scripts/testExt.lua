@@ -1,6 +1,4 @@
 local mod = mod_loader.mods[modApi.currentMod]
---LOG("[TRUELCH] tostring(mod): "..tostring(mod))
---LOG("[TRUELCH] save_table(mod): "..save_table(mod))
 
 truelch_TestExt = Skill:new{
 	Name = "Test Ext",
@@ -12,9 +10,18 @@ truelch_TestExt = Skill:new{
 function truelch_TestExt:GetTargetArea(point)
 	local ret = PointList()
 
+	--[[
 	for j = 0, 7 do
 		for i = 0, 7 do
 			ret:push_back(Point(i, j))
+		end
+	end
+	]]
+
+	for dir = DIR_START, DIR_END do
+		for k = 2, 7 do
+			local curr = point + DIR_VECTORS[dir]*k
+			ret:push_back(curr)
 		end
 	end
 
@@ -58,16 +65,114 @@ function TruelchDoTheFuckingLogic()
 	--local se = 
 end
 
+TruelchExtraAddScript_se = nil
+TruelchExtraAddScript_pawnId = nil
+TruelchExtraAddScript_pos = nil
 
-function truelch_TestExt:GetSkillEffect(p1, p2)
+function TruelchExtraAddScript_OLD(se, pawnId, pos)
+
+	if (se) == nil then LOG("TruelchExtraAddScript -> se == nil :(") else LOG("TruelchExtraAddScript -> se ~= nil :)") end
+	LOG("TruelchExtraAddScript -> pawnId: "..tostring(pawnId))
+	LOG("TruelchExtraAddScript -> pos: "..pos:GetString())
+
+	TruelchExtraAddScript_se = se
+	TruelchExtraAddScript_pawnId = pawnId
+	TruelchExtraAddScript_pos = pos
+
+	local damage = SpaceDamage(pos, 0)
+	damage.sScript = [[
+		local pawn = Board:GetPawn(]]..tostring(TruelchExtraAddScript_pawnId)..[[)
+		pawn:SetSpace(TruelchExtraAddScript_pos)
+	]]
+	se:AddDamage(damage)
+end
+
+function TruelchExtraAddScript(se, pawnId, pos)
+
+	if (se) == nil then LOG("TruelchExtraAddScript -> se == nil :(") else LOG("TruelchExtraAddScript -> se ~= nil :)") end
+	LOG("TruelchExtraAddScript -> pawnId: "..tostring(pawnId))
+	LOG("TruelchExtraAddScript -> pos: "..pos:GetString())
+
+	TruelchExtraAddScript_se = se
+	TruelchExtraAddScript_pawnId = pawnId
+	TruelchExtraAddScript_pos = pos
+
+	se:AddScript([[
+		if (se) == nil then LOG("se:AddScript -> TruelchExtraAddScript_se == nil :(") else LOG("se:AddScript -> TruelchExtraAddScript_se ~= nil :)") end
+		LOG("se:AddScript -> TruelchExtraAddScript_pawnId: "..tostring(TruelchExtraAddScript_pawnId))
+		LOG("se:AddScript -> TruelchExtraAddScript_pos: "..TruelchExtraAddScript_pos:GetString())
+
+		local pawn = Board:GetPawn(]]..tostring(TruelchExtraAddScript_pawnId)..[[)
+
+		if (pawn) == nil then LOG("se:AddScript -> pawn == nil :(") else LOG("se:AddScript -> pawn ~= nil :)") end
+
+		pawn:SetSpace(TruelchExtraAddScript_pos)
+	]])
+end
+
+function truelch_TestExt:GetSkillEffect(pos1, pos2)
+	local ret = SkillEffect()
+
+	ret:AddScript([[
+		local se = SkillEffect()
+		local p1 = ]]..pos1:GetString()..[[
+		local p2 = ]]..pos2:GetString()..[[
+		local pawn = GetPawn(pos1)
+		TruelchExtraAddScript(se, pawn:GetId(), p2)
+		Board:AddEffect(se)
+	]])
+
+	return ret
+end
+
+
+
+function truelch_TestExt:GetSkillEffect_THISWORKS(pos1, pos2)
 	local ret = SkillEffect()
 
 	truelch_mod = mod
-	if truelch_mod ~= nil then
-		LOG("[TRUELCH] GetSkillEffect truelch_mod EXISTS!!! YAY")
-	else
-		LOG("[TRUELCH] GetSkillEffect truelch_mod is nil :(")
-	end
+
+	ret:AddScript([[
+		local p1 = ]]..pos1:GetString()..[[
+		local p2 = ]]..pos2:GetString()..[[
+		local se = SkillEffect()
+		local dir = GetDirection(p2 - p1)
+		
+		se:AddBounce(p1, 1)
+		
+		local damage = SpaceDamage(p1 , 1)
+		damage.sAnimation = "ExploAir1"
+		se:AddDamage(damage)
+		
+		damage = SpaceDamage(p2, 2)
+		damage.sAnimation = "ExploArt2"
+		
+		se:AddArtillery(damage, "effects/shotup_ignite_fireball.png", NO_DELAY)
+		
+		local target = p1 + DIR_VECTORS[dir]
+		while target ~= p2 do 
+			se:AddBounce(target, 1)
+			se:AddDelay(0.1)
+			damage = SpaceDamage(target, 1)
+			damage.sAnimation = "ExploRaining1"
+			damage.sSound = "/weapons/raining_volley_tile"
+			se:AddDamage(damage)
+			target = target + DIR_VECTORS[dir]
+		end
+		
+		se:AddBounce(p2, 2)
+
+		Board:AddEffect(se)
+	]])
+
+	return ret
+end
+
+
+function truelch_TestExt:GetSkillEffect_Test1(p1, p2)
+	local ret = SkillEffect()
+
+	truelch_mod = mod
 
 	ret:AddScript([[
 		local ret2 = TruelchGetRet()

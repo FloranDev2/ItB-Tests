@@ -53,15 +53,15 @@ function mod:init()
 	require(self.scriptPath.."excavate") --weapon truelch_Excavate
 	require(self.scriptPath.."permanentHp") --weapon truelch_PermanentHp
 
-	require(self.scriptPath.."diagonalPush")
-	require(self.scriptPath.."diagonalPushEvent")
-	require(self.scriptPath.."diagonalPushMeta")
-	require(self.scriptPath.."diagonalPushExt")
+	--require(self.scriptPath.."diagonalPush")
+	--require(self.scriptPath.."diagonalPushEvent")
+	--require(self.scriptPath.."diagonalPushMeta")
+	--require(self.scriptPath.."diagonalPushExt")
 	require(self.scriptPath.."diagonalPushScript")
 
-	require(self.scriptPath.."testPreview") --truelch_TestPreview
-	require(self.scriptPath.."testExt") --truelch_TestExt
-	require(self.scriptPath.."testExt2") --truelch_TestExt2
+	--require(self.scriptPath.."testPreview") --truelch_TestPreview
+	--require(self.scriptPath.."testExt") --truelch_TestExt
+	--require(self.scriptPath.."testExt2") --truelch_TestExt2
 
 	--Then, press enter and close the console
 end
