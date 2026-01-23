@@ -1,3 +1,21 @@
+
+
+--Debug:
+--[[
+[2026-01-23 01:37:33] [[string "line"]:100]: bump -> pawnId: 118, pawn: Leaper, damage: 1
+[2026-01-23 01:37:33] [./mods/ItB-Tests-Git/scripts/diagonalPushScript.lua:71]: Truelch_SetHealth(pawnId: 118, pawn: Leaper, health: 0)
+[2026-01-23 01:37:33] [[string "line"]:100]: bump -> pawnId: 117, pawn: Soldier Psion, damage: 1
+[2026-01-23 01:37:33] [./mods/ItB-Tests-Git/scripts/diagonalPushScript.lua:71]: Truelch_SetHealth(pawnId: 117, pawn: Soldier Psion, health: 1)
+
+[2026-01-23 01:37:34] [[string "line"]:2]: AddScript -> id: 117, health: 1
+[2026-01-23 01:37:34] [[string "line"]:2]: AddScript -> id: 117, health: 1
+]]
+
+
+
+
+
+
 --[[
 TODO:
 - make the unit play their hurt sound

@@ -50,36 +50,54 @@ function truelch_DiagonalPushScript:GetTargetArea(point)
 	return ret
 end
 
-Truelch_SetPos_pawnId = -1
-Truelch_SetPos_pos = Point(-1, -1)
-function Truelch_SetPos(se, pawnId, pos)
-	Truelch_SetPos_pawnId = pawnId
-	Truelch_SetPos_pos = pos
 
-	se:AddScript([[
-		local pawn = Board:GetPawn(]]..tostring(Truelch_SetPos_pawnId)..[[)
-		pawn:SetSpace(Truelch_SetPos_pos)
-	]])
-
-	--Truelch_SetPos_pawnId = nil
-	--Truelch_SetPos_pos = nil
+--Truelch_pushData = {}
+Truelch_pushData = nil
+function Truelch_MoveBack(se)
+	LOG("Truelch_MoveBack...")
+	if Truelch_pushData ~= nil and se ~= nil then
+		LOG("... ok!")
+		se:AddScript([[
+			for _, data in ipairs(Truelch_pushData) do
+				local pawn = Board:GetPawn(data[1])
+				LOG("pawn: "..pawn:GetMechName()..", curr pos: "..pawn:GetSpace():GetString()..", back pos: "..data[2]:GetString())
+				if pawn ~= nil then
+					pawn:SetSpace(data[2])
+				else
+					LOG("pawn doesn't exist anymore!") --just in case
+				end
+			end
+		]])
+	else
+		LOG("... not ok!")
+	end
 end
 
-Truelch_SetHealth_pawnId = -1
-Truelch_SetHealth_health = 0
-function Truelch_SetHealth(se, pawnId, health)
-	Truelch_SetHealth_pawnId = pawnId
-	Truelch_SetHealth_health = health
+--Truelch_bumpData = {}
+Truelch_bumpData = nil
+function Truelch_ApplyBumpDamage(se)
+	LOG("Truelch_ApplyBumpDamage...")
+	if Truelch_bumpData ~= nil and se ~= nil then
+		LOG("... ok!")
+		se:AddScript([[
+			for _, data in ipairs(Truelch_bumpData) do
+				local pawn = Board:GetPawn(data[1])
+				if pawn ~= nil then
+					pawn:SetHealth(pawn:GetHealth() - data[2])
+				else
+					LOG("bump -> pawn is nil")
+				end
+			end
+		]])
+	else
+		LOG("... not ok!")
+	end
 
-	se:AddScript([[
-		local pawn = Board:GetPawn(]]..tostring(Truelch_SetHealth_pawnId)..[[)
-		pawn:SetHealth(Truelch_SetHealth_health)
-	]])
-
-	--Truelch_SetHealth_pawnId = nil
-	--Truelch_SetHealth_health = nil
+	--Clear data
+	--NOTE: NOT HERE, AFTER THE ADD SCRIPT HAS BEEN ACTUALLY RESOLVED!!!
+	-- or at the start of a new use of this?
+	-- or rather, at the start of the ScriptEffect function
 end
-
 
 function truelch_DiagonalPushScript:ScriptEffect(ret, pos1, pos2)
 	ret:AddScript([[
@@ -88,9 +106,10 @@ function truelch_DiagonalPushScript:ScriptEffect(ret, pos1, pos2)
 		local p1 = ]]..pos1:GetString()..[[
 		local p2 = ]]..pos2:GetString()..[[
 		local offsets = { Point(-1, -1), Point(1, -1), Point(1, 1), Point(-1, 1) }
-		local pushData = {}
+
 		local terrData = {}
-		local bumpData = {}
+		Truelch_pushData = {}
+		Truelch_bumpData = {}
 
 		se:AddBounce(p1, 1)
 		local damage = SpaceDamage(p2, 1)
@@ -104,8 +123,7 @@ function truelch_DiagonalPushScript:ScriptEffect(ret, pos1, pos2)
 		local dx = math.abs(diff.x)
 		local dy = math.abs(diff.y)
 		local dist = math.max(dx, dy)
-		se:AddDelay(0.35 + dist * 0.075)
-		--se:AddDelay(0.3)
+		se:AddDelay(0.4 + dist * 0.075)
 
 		se:AddBounce(p2, 1)
 
@@ -137,42 +155,40 @@ function truelch_DiagonalPushScript:ScriptEffect(ret, pos1, pos2)
 				if pawnStart ~= nil then
 					if not pawnStart:IsGuarding() and isBump then
 						if pawnStart:IsEnemy() and isForceAmp then
-							bumpData[#bumpData+1] = { pawnStart:GetId(), 2 }
+							--bumpData[#bumpData+1]               = { pawnStart:GetId(), 2 } --old
+							Truelch_bumpData[#Truelch_bumpData+1] = { pawnStart:GetId(), 2 } --new
 						else
-							bumpData[#bumpData+1] = { pawnStart:GetId(), 1 }
+							--bumpData[#bumpData+1]               = { pawnStart:GetId(), 1 } --old
+							Truelch_bumpData[#Truelch_bumpData+1] = { pawnStart:GetId(), 1 } --new
 						end
 
 						if pawnEnd ~= nil then
 							if pawnEnd:IsAbility("tatu_armordillo") then
-								--No damage
+								--No damage: nothing to do
 							elseif pawnEnd:IsEnemy() and isForceAmp then
-								bumpData[#bumpData+1] = { pawnEnd:GetId(), 2 }
+								--bumpData[#bumpData+1]               = { pawnEnd:GetId(), 2 } --old
+								Truelch_bumpData[#Truelch_bumpData+1] = { pawnEnd:GetId(), 2 } --new
 							else
-								bumpData[#bumpData+1] = { pawnEnd:GetId(), 1 }
+								--bumpData[#bumpData+1]               = { pawnEnd:GetId(), 1 } --old
+								Truelch_bumpData[#Truelch_bumpData+1] = { pawnEnd:GetId(), 1 } --new
 							end
 						else
 							terrData[#terrData+1] = leapEnd
 						end
 
-						pushData[#pushData+1] = { pawnStart:GetId(), leapStart }
+						--pushData[#pushData+1]               = { pawnStart:GetId(), leapStart } --old
+						Truelch_pushData[#Truelch_pushData+1] = { pawnStart:GetId(), leapStart } --new
 					end
 				end
 			end		
 		end
 
-		if #pushData > 0 then
+		if #Truelch_pushData > 0 then
 			se:AddDelay(0.2)
 		end
 
 		--Move back
-		for _, data in ipairs(pushData) do
-			local pawnStart = Board:GetPawn(data[1])
-			if pawnStart ~= nil then
-				Truelch_SetPos(se, pawnStart:GetId(), data[2])
-			else
-				LOG("pawnStart doesn't exist anymore!") --just in case
-			end
-		end
+		Truelch_MoveBack(se)
 
 		se:AddDelay(0.1)
 
@@ -182,18 +198,19 @@ function truelch_DiagonalPushScript:ScriptEffect(ret, pos1, pos2)
 		end
 
 		--Apply bump damage
-		for _, data in ipairs(bumpData) do
+		for _, data in ipairs(Truelch_bumpData) do
 			local pawn = Board:GetPawn(data[1])
 			if pawn ~= nil then
-				--pawn:SetHealth(pawn:GetHealth() - data[2])
-				Truelch_SetHealth(se, pawn:GetId(), pawn:GetHealth() - data[2])
-
-				--play sound here
 				local soundFx = SpaceDamage(pawn:GetSpace(), 0)
 				soundFx.sSound = _G[pawn:GetType()].SoundLocation.."hurt"
 				se:AddDamage(soundFx)
+			else
+				LOG("bump -> pawn is nil")
 			end
 		end
+
+		--NEW
+		Truelch_ApplyBumpDamage(se)
 
 		Board:AddEffect(se)
 	]])
