@@ -50,11 +50,9 @@ function truelch_DiagonalPushScript:GetTargetArea(point)
 	return ret
 end
 
-Truelch_SetPos_se = nil
-Truelch_SetPos_pawnId = nil
-Truelch_SetPos_pos = nil
+Truelch_SetPos_pawnId = -1
+Truelch_SetPos_pos = Point(-1, -1)
 function Truelch_SetPos(se, pawnId, pos)
-	Truelch_SetPos_se = se
 	Truelch_SetPos_pawnId = pawnId
 	Truelch_SetPos_pos = pos
 
@@ -63,14 +61,28 @@ function Truelch_SetPos(se, pawnId, pos)
 		pawn:SetSpace(Truelch_SetPos_pos)
 	]])
 
-	--Truelch_SetPos_se = nil
 	--Truelch_SetPos_pawnId = nil
 	--Truelch_SetPos_pos = nil
 end
 
+Truelch_SetHealth_pawnId = -1
+Truelch_SetHealth_health = 0
+function Truelch_SetHealth(se, pawnId, health)
+	Truelch_SetHealth_pawnId = pawnId
+	Truelch_SetHealth_health = health
+
+	se:AddScript([[
+		local pawn = Board:GetPawn(]]..tostring(Truelch_SetHealth_pawnId)..[[)
+		pawn:SetHealth(Truelch_SetHealth_health)
+	]])
+
+	--Truelch_SetHealth_pawnId = nil
+	--Truelch_SetHealth_health = nil
+end
+
+
 function truelch_DiagonalPushScript:ScriptEffect(ret, pos1, pos2)
 	ret:AddScript([[
-		LOG("------------------------------ A")
 		local mod = TruelchGetDiagMod()
 		local se = SkillEffect()
 		local p1 = ]]..pos1:GetString()..[[
@@ -78,6 +90,7 @@ function truelch_DiagonalPushScript:ScriptEffect(ret, pos1, pos2)
 		local offsets = { Point(-1, -1), Point(1, -1), Point(1, 1), Point(-1, 1) }
 		local pushData = {}
 		local terrData = {}
+		local bumpData = {}
 
 		se:AddBounce(p1, 1)
 		local damage = SpaceDamage(p2, 1)
@@ -86,15 +99,15 @@ function truelch_DiagonalPushScript:ScriptEffect(ret, pos1, pos2)
 		--If I used FULL_DELAY, it'll add more delay than needed
 
 		--local dist = p1:Manhattan(p2)
-
 		--Seemingly makes the game crashes??!
 		local diff = p2 - p1
 		local dx = math.abs(diff.x)
 		local dy = math.abs(diff.y)
 		local dist = math.max(dx, dy)
 		se:AddDelay(0.35 + dist * 0.075)
-
 		--se:AddDelay(0.3)
+
+		se:AddBounce(p2, 1)
 
 		for i, offset in ipairs(offsets) do
 			local leapStart = p2 + offset
@@ -108,7 +121,6 @@ function truelch_DiagonalPushScript:ScriptEffect(ret, pos1, pos2)
 			local isForceAmp = IsPassiveSkill("Passive_ForceAmp")
 
 			if isValid then
-
 				local leap = PointList()
 				leap:push_back(leapStart)
 				leap:push_back(leapEnd)
@@ -125,18 +137,18 @@ function truelch_DiagonalPushScript:ScriptEffect(ret, pos1, pos2)
 				if pawnStart ~= nil then
 					if not pawnStart:IsGuarding() and isBump then
 						if pawnStart:IsEnemy() and isForceAmp then
-							pawnStart:SetHealth(pawnStart:GetHealth() - 2)
+							bumpData[#bumpData+1] = { pawnStart:GetId(), 2 }
 						else
-							pawnStart:SetHealth(pawnStart:GetHealth() - 1)
+							bumpData[#bumpData+1] = { pawnStart:GetId(), 1 }
 						end
 
 						if pawnEnd ~= nil then
 							if pawnEnd:IsAbility("tatu_armordillo") then
 								--No damage
 							elseif pawnEnd:IsEnemy() and isForceAmp then
-								pawnEnd:SetHealth(pawnEnd:GetHealth() - 2)
+								bumpData[#bumpData+1] = { pawnEnd:GetId(), 2 }
 							else
-								pawnEnd:SetHealth(pawnEnd:GetHealth() - 1)
+								bumpData[#bumpData+1] = { pawnEnd:GetId(), 1 }
 							end
 						else
 							terrData[#terrData+1] = leapEnd
@@ -148,31 +160,40 @@ function truelch_DiagonalPushScript:ScriptEffect(ret, pos1, pos2)
 			end		
 		end
 
-		LOG("#pushData: "..tostring(#pushData))
-
 		if #pushData > 0 then
-			LOG("se:AddDelay(0.2)")
 			se:AddDelay(0.2)
 		end
 
+		--Move back
 		for _, data in ipairs(pushData) do
-			LOG("data[1]: "..tostring(data[1])..", data[2]: "..data[2]:GetString())
 			local pawnStart = Board:GetPawn(data[1])
-			LOG("pawnStart: "..pawnStart:GetMechName())
-			--pawnStart:SetSpace(data[2])
-			Truelch_SetPos(se, pawnStart:GetId(), data[2])
+			if pawnStart ~= nil then
+				Truelch_SetPos(se, pawnStart:GetId(), data[2])
+			else
+				LOG("pawnStart doesn't exist anymore!") --just in case
+			end
 		end
 
 		se:AddDelay(0.1)
-		LOG("se:AddDelay(0.1)")
 
 		for _, pos in ipairs(terrData) do
-			LOG("terrData -> pos: "..pos:GetString())
 			local damage = SpaceDamage(pos, 1)
 			se:AddDamage(damage)
 		end
 
-		se:AddBounce(p2, 1)
+		--Apply bump damage
+		for _, data in ipairs(bumpData) do
+			local pawn = Board:GetPawn(data[1])
+			if pawn ~= nil then
+				--pawn:SetHealth(pawn:GetHealth() - data[2])
+				Truelch_SetHealth(se, pawn:GetId(), pawn:GetHealth() - data[2])
+
+				--play sound here
+				local soundFx = SpaceDamage(pawn:GetSpace(), 0)
+				soundFx.sSound = _G[pawn:GetType()].SoundLocation.."hurt"
+				se:AddDamage(soundFx)
+			end
+		end
 
 		Board:AddEffect(se)
 	]])
@@ -247,8 +268,6 @@ function truelch_DiagonalPushScript:Preview(ret, p1, p2)
 		end
 	end
 
-
-
 end
 
 function truelch_DiagonalPushScript:GetSkillEffect(p1, p2)
@@ -262,6 +281,12 @@ function truelch_DiagonalPushScript:GetSkillEffect(p1, p2)
 
 	self:ScriptEffect(ret, p1, p2)
 	self:Preview(ret, p1, p2)
+
+	--[[
+	local s = SpaceDamage(p2)
+	s.sSound = ""
+	ret:AddArtillery(s, "", NO_DELAY)
+	]]
 
 	return ret
 end

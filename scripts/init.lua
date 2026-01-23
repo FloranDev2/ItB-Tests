@@ -59,7 +59,7 @@ function mod:init()
 	--require(self.scriptPath.."diagonalPushExt")
 	require(self.scriptPath.."diagonalPushScript")
 
-	--require(self.scriptPath.."testPreview") --truelch_TestPreview
+	require(self.scriptPath.."testPreview") --truelch_TestPreview
 	--require(self.scriptPath.."testExt") --truelch_TestExt
 	--require(self.scriptPath.."testExt2") --truelch_TestExt2
 
