@@ -70,7 +70,7 @@ truelch_DiagonalPushScript = ArtilleryDefault:new{
     Rarity = 3,
     PowerCost = 0,
     LaunchSound = "/weapons/modified_cannons",
-	ImpactSound = "/impact/generic/explosion",	
+	ImpactSound = "/impact/generic/explosion",
 	UpShot = "effects/shotup_tribomb_missile.png",
 	ExplosionCenter = "ExploArt1",
 	TipImage = {
@@ -127,20 +127,35 @@ function Truelch_MoveBack(se)
 end
 
 --Truelch_bumpData = {}
+--TODO: frozen / shield
+--Reminder: use the function to not damage tile under the pawn if the pawn is frozen, shielded or may die from bump damage
 Truelch_bumpData = nil
-function Truelch_ApplyBumpDamage(se)
+function Truelch_ApplyBumpDamage(se, id)
 	if Truelch_bumpData ~= nil and se ~= nil then
 		se:AddScript([[
 			local mod = TruelchGetDiagMod()
+			local se = SkillEffect()
+			se.iOwner = ]]..id..[[
+
 			for _, data in ipairs(Truelch_bumpData) do
 				local pawn = Board:GetPawn(data[1])
 				if pawn ~= nil then
 					truelch_PlayFakeBumpDamage(pawn:GetSpace(), pawn:GetMaxHealth(), pawn:GetHealth(), data[2], pawn:IsArmor())
-					pawn:SetHealth(pawn:GetHealth() - data[2])
+					if pawn:IsFrozen() or pawn:IsShield() then
+						local damage = SpaceDamage(pawn:GetSpace(), 1)
+						se:AddSafeDamage(damage)
+					elseif pawn:GetHealth() > data[2] then
+						pawn:SetHealth(pawn:GetHealth() - data[2])
+					else
+						local damage = SpaceDamage(pawn:GetSpace(), DAMAGE_DEATH)
+						se:AddSafeDamage(damage)
+					end
 				else
 					LOG("bump -> pawn is nil")
 				end
 			end
+
+			Board:AddEffect(se)
 		]])
 	end
 
@@ -150,12 +165,16 @@ function Truelch_ApplyBumpDamage(se)
 	-- or rather, at the start of the ScriptEffect function
 end
 
-function truelch_DiagonalPushScript:ScriptEffect(ret, pos1, pos2)
+function truelch_DiagonalPushScript:ScriptEffect(ret, pos1, pos2, id)
 	ret:AddScript([[
 		local mod = TruelchGetDiagMod()
 		local se = SkillEffect()
 		local p1 = ]]..pos1:GetString()..[[
 		local p2 = ]]..pos2:GetString()..[[
+		local ownerId = ]]..id..[[		
+
+		se.iOwner = ownerId
+
 		local offsets = { Point(-1, -1), Point(1, -1), Point(1, 1), Point(-1, 1) }
 
 		local terrData = {}
@@ -255,13 +274,24 @@ function truelch_DiagonalPushScript:ScriptEffect(ret, pos1, pos2)
 			end
 		end
 
-		Truelch_ApplyBumpDamage(se)
+		Truelch_ApplyBumpDamage(se, ownerId)
 
 		Board:AddEffect(se)
 	]])
 end
 
 function truelch_DiagonalPushScript:Preview(ret, p1, p2)
+	--Fake artillery arc
+	local fakeArc = SpaceDamage(p1, 0)
+	local dir = GetDirection(p2 - p1)
+	local distance = p1:Manhattan(p2)
+	fakeArc.sImageMark = "combat/icons/arty_"..dir.."_"..distance..".png"
+	ret:AddDamage(fakeArc)
+
+	--Fake damage
+	local fakeDmg = SpaceDamage(p2, 1)
+	truelch_diagonal_mod.weaponPreview:AddDamage(fakeDmg)
+
 	--Reminder: in ItB, Up is (0, -1). Here, I'm doing the opposite; Up = (0, 1)
 	--          0: Up          1: Right      2: Down      3: Left
 	local offsets = { Point(-1, -1), Point(1, -1), Point(1, 1), Point(-1, 1) }
@@ -334,21 +364,7 @@ end
 
 function truelch_DiagonalPushScript:GetSkillEffect(p1, p2)
 	local ret = SkillEffect()
-
-	--[[
-	local damage = SpaceDamage(p2, 1)
-	damage.sAnimation = self.ExplosionCenter
-	ret:AddArtillery(damage, self.UpShot, NO_DELAY)
-	]]
-
-	self:ScriptEffect(ret, p1, p2)
+	self:ScriptEffect(ret, p1, p2, Pawn:GetId())
 	self:Preview(ret, p1, p2)
-
-	--[[
-	local s = SpaceDamage(p2)
-	s.sSound = ""
-	ret:AddArtillery(s, "", NO_DELAY)
-	]]
-
 	return ret
 end

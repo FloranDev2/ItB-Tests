@@ -6,7 +6,7 @@ local mod = {
 	modApiVersion = "2.9.2",
 	--gameVersion = "1.2.88",
     dependencies = {
-		memedit = "1.0.4",
+		memedit = "1.2.0", --was 1.0.4
         modApiExt = "1.21",
     }
 }
@@ -17,9 +17,32 @@ function mod:init()
 	self.artilleryArc   = require(self.scriptPath.."libs/artilleryArc")
 	self.worldConstants = require(self.scriptPath.."libs/worldConstants")
 	self.weaponPreview  = require(self.scriptPath.."libs/weaponPreview")
-	self.customAnim     = require(self.scriptPath.."libs/customAnim")
+	--self.customAnim     = require(self.scriptPath.."libs/customAnim")
 
 	--Assets
+	--Fake artillery arcs
+	local path = "combat/icons/arty_"
+	local locs = {
+--index for dist is dist-1
+--dist:   2                3                4                  5                  6                  7                    --index for dir is dir+1 since indexes start at 1 in lua
+		{ Point( -6, -83), Point( -6, -95), Point(  -5, -108), Point(  -5, -122), Point(  -4, -137), Point(  -4, -153) }, --dir: 0 (DIR_UP) (problem starting from 4)
+		{ Point( -6, -40), Point( -6, -34), Point(  -5,  -28), Point(  -5,  -23), Point(  -4,  -18), Point(  -4,  -14) }, --dir: 1 (DIR_RIGHT)
+		{ Point(-60, -40), Point(-90, -33), Point(-114,  -27), Point(-144,  -22), Point(-171,  -17), Point(-198,  -13) }, --dir: 2 (DIR_DOWN)
+		{ Point(-63, -83), Point(-90, -95), Point(-114, -108), Point(-141, -122), Point(-161, -137), Point(-190, -153) }, --dir: 3 (DIR_LEFT)
+	}
+	for dir = DIR_START, DIR_END do
+		--LOG("dir: "..dir)
+		for k = 2, 7 do
+			--LOG("k: "..k)
+			local str = path..dir.."_"..k..".png"
+			--LOG("str: "..str)
+			local loc = locs[dir+1][k-1]
+			--LOG("loc: "..loc:GetString())
+			modApi:appendAsset("img/"..str, self.resourcePath.."img/"..str)
+				Location[str] = loc
+		end
+	end
+
 	--Image Mark
 	local path = "combat/icons/diag_push_"
 	local locs = { Point(-22, -20), Point(-2, 0),  Point(-22, 20), Point(-42, 0) }
@@ -51,24 +74,6 @@ function mod:init()
 	end
 
 	--Fake bump damage
-	--health_<armored>_<max_health>_<curr_health>_<bump_damage>
-	--[[
-	local animName = "health_1_1_1"
-	local anim = "effects/"..animName..".png"
-	modApi:appendAsset("img/"..anim, self.resourcePath.."img/"..anim)
-		Location[anim] = Point(-10, -10)
-
-	ANIMS[animName] = Animation:new{
-		Image = anim,
-		PosX = -10,
-		PosY = -10,
-		Time = 0.08,
-		NumFrames = 6,
-		Layer = ANIMS.LAYER_FRONT,
-		Loop = false,
-	}
-	]]
-
 	local arm = { false, true }
 	for max = 1, 6 do
 		for curr = 1, max do
@@ -80,7 +85,7 @@ function mod:init()
 					end
 					anim = anim..max.."_"..curr.."_"..bumpDmg
 
-					LOG("anim: "..anim)
+					--LOG("anim: "..anim)
 
 					modApi:appendAsset("img/effects/"..anim..".png", self.resourcePath.."img/effects/"..anim..".png")
 						Location["effects/"..anim..".png"] = Point(-10, -10)
@@ -107,7 +112,7 @@ function mod:init()
 	--require(self.scriptPath.."diagonalPushEvent")
 	--require(self.scriptPath.."diagonalPushMeta")
 	--require(self.scriptPath.."diagonalPushExt")
-	require(self.scriptPath.."diagonalPushScript")
+	--require(self.scriptPath.."diagonalPushScript")
 
 	require(self.scriptPath.."testPreview") --truelch_TestPreview
 	--require(self.scriptPath.."testExt") --truelch_TestExt
