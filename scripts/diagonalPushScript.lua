@@ -1,9 +1,66 @@
 truelch_diagonal_mod = mod_loader.mods[modApi.currentMod]
 
+local path = mod_loader.mods[modApi.currentMod].scriptPath
+--local customAnim = require(path.."libs/customAnim")
+
 --Maybe the function is unnecessary? Since truelch_diagonal_mod is also global?
 function TruelchGetDiagMod()
 	return truelch_diagonal_mod
 end
+
+--[[
+
+Sounds of vanilla's Artemis Artillery: (Scarab bumped into a Leaper)
+	/ui/general/button_confirm
+	/weapons/artillery_volley
+	/impact/generic/explosion, Impact Index: null (0)
+	/enemy/shared/moved
+	/impact/general, Impact Index: blob (4)
+	/impact/general, Impact Index: flesh (3)
+	/enemy/scarab_1/hurt
+	/enemy/leaper_1/death
+
+Sounds of mine:
+	/ui/general/button_confirm
+	/weapons/modified_cannons
+	/enemy/leaper_1/land, Impact Index: water (7)
+	/enemy/leaper_1/land, Impact Index: flesh (3)
+	/props/water_splash
+	/enemy/scarab_1/death
+	/enemy/scarab_1/hurt, Impact Index: blob (4)
+	/enemy/leaper_1/hurt, Impact Index: flesh (3)
+]]
+
+
+----- CUSTOM ANIM -----
+--First argument can be a Point and I think I'll use that instead
+--pawnId / loc
+function truelch_PlayFakeBumpDamage(loc, maxHealth, currHealth, bumpDamage, armored)
+	LOG("truelch_PlayFakeBumpDamage(loc: "..loc:GetString()..", max: "..maxHealth..", curr: "..currHealth..", bumpDamage: "..bumpDamage..", armored: "..tostring(armored))
+	if currHealth < 0 or currHealth > 10 then return end
+
+	if currHealth > maxHealth then
+		currHealth = maxHealth
+	end
+
+	if bumpDamage > currHealth then
+		bumpDamage = currHealth
+	end
+
+	local anim = "health_"
+
+	if armored then
+		anim = anim.."armored_"
+	end
+
+	anim = anim..maxHealth.."_"..currHealth.."_"..bumpDamage
+
+	--TruelchGetDiagMod().customAnim:add(loc, anim)
+	Board:AddAnimation(loc, anim, ANIM_NO_DELAY)
+end
+
+
+----- WEAPON -----
 
 truelch_DiagonalPushScript = ArtilleryDefault:new{
     Name = "Diagonal Push (Script)",
@@ -19,7 +76,7 @@ truelch_DiagonalPushScript = ArtilleryDefault:new{
 	TipImage = {
 		Unit   = Point(2, 4),
 		Enemy  = Point(2, 2),
-		Enemy2 = Point(3, 3),
+		Enemy2 = Point(1, 1),
 		Target = Point(2, 2),
 	}
 }
@@ -54,9 +111,7 @@ end
 --Truelch_pushData = {}
 Truelch_pushData = nil
 function Truelch_MoveBack(se)
-	LOG("Truelch_MoveBack...")
 	if Truelch_pushData ~= nil and se ~= nil then
-		LOG("... ok!")
 		se:AddScript([[
 			for _, data in ipairs(Truelch_pushData) do
 				local pawn = Board:GetPawn(data[1])
@@ -68,29 +123,25 @@ function Truelch_MoveBack(se)
 				end
 			end
 		]])
-	else
-		LOG("... not ok!")
 	end
 end
 
 --Truelch_bumpData = {}
 Truelch_bumpData = nil
 function Truelch_ApplyBumpDamage(se)
-	LOG("Truelch_ApplyBumpDamage...")
 	if Truelch_bumpData ~= nil and se ~= nil then
-		LOG("... ok!")
 		se:AddScript([[
+			local mod = TruelchGetDiagMod()
 			for _, data in ipairs(Truelch_bumpData) do
 				local pawn = Board:GetPawn(data[1])
 				if pawn ~= nil then
+					truelch_PlayFakeBumpDamage(pawn:GetSpace(), pawn:GetMaxHealth(), pawn:GetHealth(), data[2], pawn:IsArmor())
 					pawn:SetHealth(pawn:GetHealth() - data[2])
 				else
 					LOG("bump -> pawn is nil")
 				end
 			end
 		]])
-	else
-		LOG("... not ok!")
 	end
 
 	--Clear data
@@ -155,29 +206,24 @@ function truelch_DiagonalPushScript:ScriptEffect(ret, pos1, pos2)
 				if pawnStart ~= nil then
 					if not pawnStart:IsGuarding() and isBump then
 						if pawnStart:IsEnemy() and isForceAmp then
-							--bumpData[#bumpData+1]               = { pawnStart:GetId(), 2 } --old
-							Truelch_bumpData[#Truelch_bumpData+1] = { pawnStart:GetId(), 2 } --new
+							Truelch_bumpData[#Truelch_bumpData+1] = { pawnStart:GetId(), 2 }
 						else
-							--bumpData[#bumpData+1]               = { pawnStart:GetId(), 1 } --old
-							Truelch_bumpData[#Truelch_bumpData+1] = { pawnStart:GetId(), 1 } --new
+							Truelch_bumpData[#Truelch_bumpData+1] = { pawnStart:GetId(), 1 }
 						end
 
 						if pawnEnd ~= nil then
 							if pawnEnd:IsAbility("tatu_armordillo") then
 								--No damage: nothing to do
 							elseif pawnEnd:IsEnemy() and isForceAmp then
-								--bumpData[#bumpData+1]               = { pawnEnd:GetId(), 2 } --old
-								Truelch_bumpData[#Truelch_bumpData+1] = { pawnEnd:GetId(), 2 } --new
+								Truelch_bumpData[#Truelch_bumpData+1] = { pawnEnd:GetId(), 2 }
 							else
-								--bumpData[#bumpData+1]               = { pawnEnd:GetId(), 1 } --old
-								Truelch_bumpData[#Truelch_bumpData+1] = { pawnEnd:GetId(), 1 } --new
+								Truelch_bumpData[#Truelch_bumpData+1] = { pawnEnd:GetId(), 1 }
 							end
 						else
 							terrData[#terrData+1] = leapEnd
 						end
 
-						--pushData[#pushData+1]               = { pawnStart:GetId(), leapStart } --old
-						Truelch_pushData[#Truelch_pushData+1] = { pawnStart:GetId(), leapStart } --new
+						Truelch_pushData[#Truelch_pushData+1] = { pawnStart:GetId(), leapStart }
 					end
 				end
 			end		
@@ -209,7 +255,6 @@ function truelch_DiagonalPushScript:ScriptEffect(ret, pos1, pos2)
 			end
 		end
 
-		--NEW
 		Truelch_ApplyBumpDamage(se)
 
 		Board:AddEffect(se)

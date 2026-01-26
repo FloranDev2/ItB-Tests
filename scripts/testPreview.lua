@@ -19,7 +19,7 @@ function truelch_TestPreview:GetTargetArea(point)
 	return ret
 end
 
-function truelch_TestPreview:GetSkillEffect_FakeArty(p1, p2)
+function truelch_TestPreview:GetSkillEffect(p1, p2)
 	local ret = SkillEffect()
 
 	local s = SpaceDamage(p2)
@@ -27,12 +27,14 @@ function truelch_TestPreview:GetSkillEffect_FakeArty(p1, p2)
 	s.sSound = ""
 	ret:AddArtillery(s, "")
 
+	local d = SpaceDamage(p2, 1)
+	ret:AddDamage(d)
+
 	return ret
 end
 
 
-
-function truelch_TestPreview:GetSkillEffect(p1, p2)
+function truelch_TestPreview:GetSkillEffect_Old(p1, p2)
 	local ret = SkillEffect()
 
 	local pawn = Board:GetPawn(p2)

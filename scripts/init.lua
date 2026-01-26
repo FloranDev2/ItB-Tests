@@ -17,6 +17,7 @@ function mod:init()
 	self.artilleryArc   = require(self.scriptPath.."libs/artilleryArc")
 	self.worldConstants = require(self.scriptPath.."libs/worldConstants")
 	self.weaponPreview  = require(self.scriptPath.."libs/weaponPreview")
+	self.customAnim     = require(self.scriptPath.."libs/customAnim")
 
 	--Assets
 	--Image Mark
@@ -32,10 +33,10 @@ function mod:init()
 		end
 	end
 
-	--Animations
+	----- ANIMATIONS -----
+	--Air push
 	for i = 0, 3 do
 		local loc = locs[i + 1]
-		--LOG("loc: "..loc:GetString())
 
 		modApi:appendAsset("img/effects/airpush_"..i..".png", self.resourcePath.."img/effects/airpush_"..i..".png")
 			Location["effects/airpush_"..i..".png"] = loc
@@ -47,6 +48,55 @@ function mod:init()
 			Time = 0.08,
 			NumFrames = 8,
 		}
+	end
+
+	--Fake bump damage
+	--health_<armored>_<max_health>_<curr_health>_<bump_damage>
+	--[[
+	local animName = "health_1_1_1"
+	local anim = "effects/"..animName..".png"
+	modApi:appendAsset("img/"..anim, self.resourcePath.."img/"..anim)
+		Location[anim] = Point(-10, -10)
+
+	ANIMS[animName] = Animation:new{
+		Image = anim,
+		PosX = -10,
+		PosY = -10,
+		Time = 0.08,
+		NumFrames = 6,
+		Layer = ANIMS.LAYER_FRONT,
+		Loop = false,
+	}
+	]]
+
+	local arm = { false, true }
+	for max = 1, 6 do
+		for curr = 1, max do
+			for bumpDmg = 1, math.min(2, curr) do
+				for _, armored in ipairs(arm) do
+					local anim = "health_"
+					if armored then
+						anim = anim.."armor_"
+					end
+					anim = anim..max.."_"..curr.."_"..bumpDmg
+
+					LOG("anim: "..anim)
+
+					modApi:appendAsset("img/effects/"..anim..".png", self.resourcePath.."img/effects/"..anim..".png")
+						Location["effects/"..anim..".png"] = Point(-10, -10)
+
+					ANIMS[anim] = Animation:new{
+						Image = "effects/"..anim..".png",
+						PosX = -10,
+						PosY = -10,
+						Time = 0.12,
+						NumFrames = 6,
+						Layer = ANIMS.LAYER_FRONT,
+						Loop = false,
+					}
+				end
+			end
+		end
 	end
 
 	--To have these weapon, outside a mission, open the console and type the following:
